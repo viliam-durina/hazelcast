@@ -76,6 +76,7 @@ import com.hazelcast.map.listener.MapPartitionLostListener;
 import com.hazelcast.partition.PartitioningStrategy;
 import com.hazelcast.projection.Projection;
 import com.hazelcast.query.PartitionPredicate;
+import com.hazelcast.query.PartitionsPredicate;
 import com.hazelcast.query.Predicate;
 import com.hazelcast.query.impl.IndexUtils;
 import com.hazelcast.spi.impl.AbstractDistributedObject;
@@ -114,6 +115,7 @@ import java.util.function.Supplier;
 
 import static com.hazelcast.core.EntryEventType.CLEAR_ALL;
 import static com.hazelcast.internal.util.CollectionUtil.asIntegerList;
+import static com.hazelcast.map.impl.query.Target.createPartitionTarget;
 import static com.hazelcast.internal.util.ConcurrencyUtil.CALLER_RUNS;
 import static com.hazelcast.internal.util.ExceptionUtil.rethrow;
 import static com.hazelcast.internal.util.InvocationUtil.invokeOnStableClusterSerial;
@@ -126,7 +128,6 @@ import static com.hazelcast.internal.util.ThreadUtil.getThreadId;
 import static com.hazelcast.internal.util.TimeUtil.timeInMsOrOneIfResultIsZero;
 import static com.hazelcast.map.impl.EntryRemovingProcessor.ENTRY_REMOVING_PROCESSOR;
 import static com.hazelcast.map.impl.MapService.SERVICE_NAME;
-import static com.hazelcast.map.impl.query.Target.createPartitionTarget;
 import static com.hazelcast.query.Predicates.alwaysFalse;
 import static com.hazelcast.spi.impl.InternalCompletableFuture.newCompletedFuture;
 import static java.lang.Math.ceil;
@@ -670,6 +671,19 @@ abstract class MapProxySupport<K, V>
                 // to speed up the removal operation using global indexes
                 // (see PartitionWideEntryWithPredicateOperationFactory.createFactoryOnRunner).
                 operationService.invokeOnPartitions(SERVICE_NAME, operation, singletonList(partitionId));
+            } else if (predicate instanceof PartitionsPredicate) {
+                PartitionsPredicate partitionsPredicate = (PartitionsPredicate) predicate;
+                PartitionIdSet partionIds = new PartitionIdSet(partitionService.getPartitionCount());
+                partitionsPredicate.getPartitionKeys().forEach(o -> {
+                    Data key = toData(o);
+                    partionIds.add(partitionService.getPartitionId(key));
+                });
+
+                OperationFactory operation = operationProvider
+                        .createPartitionWideEntryWithPredicateOperationFactory(name, ENTRY_REMOVING_PROCESSOR,
+                                partitionsPredicate.getTarget());
+
+                operationService.invokeOnPartitions(SERVICE_NAME, operation, partionIds);
             } else {
                 OperationFactory operation = operationProvider
                         .createPartitionWideEntryWithPredicateOperationFactory(name, ENTRY_REMOVING_PROCESSOR, predicate);
@@ -1264,6 +1278,17 @@ abstract class MapProxySupport<K, V>
                 OperationFactory operation = operationProvider.createPartitionWideEntryWithPredicateOperationFactory(
                         name, entryProcessor, partitionPredicate.getTarget());
                 results = operationService.invokeOnPartitions(SERVICE_NAME, operation, singletonList(partitionId));
+            } else if (predicate instanceof PartitionsPredicate) {
+                PartitionsPredicate partitionsPredicate = (PartitionsPredicate) predicate;
+                PartitionIdSet partionIds = new PartitionIdSet(partitionService.getPartitionCount());
+                partitionsPredicate.getPartitionKeys().forEach(o -> {
+                    Data key = toData(o);
+                    partionIds.add(partitionService.getPartitionId(key));
+                });
+                OperationFactory operation = operationProvider.createPartitionWideEntryWithPredicateOperationFactory(
+                        name, entryProcessor, partitionsPredicate.getTarget());
+                results = operationService.invokeOnPartitions(SERVICE_NAME, operation, partionIds);
+
             } else {
                 OperationFactory operation = operationProvider.createPartitionWideEntryWithPredicateOperationFactory(
                         name, entryProcessor, predicate);
@@ -1363,6 +1388,16 @@ abstract class MapProxySupport<K, V>
                 target = createPartitionTarget(new PartitionIdSet(partitionService.getPartitionCount(), partitionId));
                 userPredicate = partitionPredicate.getTarget();
             }
+        } else if (predicate instanceof PartitionsPredicate) {
+            PartitionsPredicate partitionsPredicate = (PartitionsPredicate) predicate;
+            PartitionIdSet partionIds = new PartitionIdSet(partitionService.getPartitionCount());
+            partitionsPredicate.getPartitionKeys().forEach(o -> {
+                Data key = toData(o);
+                partionIds.add(partitionService.getPartitionId(key));
+            });
+            target = createPartitionTarget(partionIds);
+            userPredicate = partitionsPredicate.getTarget();
+
         } else {
             userPredicate = predicate;
         }
