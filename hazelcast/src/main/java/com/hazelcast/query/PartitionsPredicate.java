@@ -16,15 +16,14 @@
 
 package com.hazelcast.query;
 
-import java.util.Collection;
-
 import com.hazelcast.internal.serialization.BinaryInterface;
 
+import java.util.Collection;
+
 /**
- * A {@link Predicate} that restricts the execution of a {@link Predicate} to a collection of  partition.
- *
+ * A {@link Predicate} that restricts the execution of a {@link Predicate} to a collection of partitions.
  * This can help to speed up query execution since only a subset instead of all partitions needs to be queried.
- *
+ * <p>
  * This predicate only has effect if used as an outermost predicate.
  *
  * @param <K> type of the entry key
@@ -35,12 +34,12 @@ import com.hazelcast.internal.serialization.BinaryInterface;
 public interface PartitionsPredicate<K, V> extends Predicate<K, V> {
 
     /**
-     * Returns the partition key that determines the partition the {@linkplain
+     * Returns the partition keys that determine the partitions the {@linkplain
      * #getTarget() target} {@link Predicate} is going to execute on.
      *
-     * @return the partition key
+     * @return the partition keys
      */
-    Collection<? extends Object> getPartitionKeys();
+    Collection<?> getPartitionKeys();
 
     /**
      * Returns the target {@link Predicate}.

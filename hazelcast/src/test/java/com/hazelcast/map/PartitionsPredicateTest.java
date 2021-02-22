@@ -89,27 +89,22 @@ public class PartitionsPredicateTest extends HazelcastTestSupport {
 
         partitionKey1 = randomString();
         partitionId1 = local.getPartitionService().getPartition(partitionKey1).getPartitionId();
-        while (true) {
+        do {
             partitionKey2 = randomString();
             partitionId2 = local.getPartitionService().getPartition(partitionKey2).getPartitionId();
-            if (partitionId2 != partitionId1) {
-                break;
-            }
-        }
-        while (true) {
+        } while (partitionId2 == partitionId1);
+        do {
             partitionKey3 = randomString();
             partitionId3 = local.getPartitionService().getPartition(partitionKey3).getPartitionId();
-            if (partitionId3 == partitionId1) {
-                break;
-            }
-        }
+        } while (partitionId3 != partitionId1);
         partitionKeys = Arrays.asList(partitionKey1, partitionKey2, partitionKey3);
 
-
         predicate = Predicates.partitionsPredicate(partitionKeys, Predicates.alwaysTrue());
-        aggPredicate = Predicates.partitionsPredicate(partitionKeys, Predicates.or(Predicates.equal("this", partitionId1), Predicates.equal("this", partitionId2), Predicates.equal("this", partitionId3)));
-
-
+        aggPredicate = Predicates.partitionsPredicate(partitionKeys,
+                Predicates.or(
+                        Predicates.equal("this", partitionId1),
+                        Predicates.equal("this", partitionId2),
+                        Predicates.equal("this", partitionId3)));
     }
 
     @Test
@@ -144,7 +139,6 @@ public class PartitionsPredicateTest extends HazelcastTestSupport {
             assertEquals(partition, value);
         }
     }
-
 
     @Test
     public void aggregate() {

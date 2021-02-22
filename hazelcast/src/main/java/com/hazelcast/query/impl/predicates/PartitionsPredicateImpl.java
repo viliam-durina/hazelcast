@@ -30,7 +30,7 @@ import java.util.Map;
 import static com.hazelcast.internal.util.Preconditions.checkNotNull;
 
 /**
- * Implementation of {@link PartitionPredicate}.
+ * Implementation of {@link PartitionsPredicate}.
  *
  * @param <K> type of the entry key
  * @param <V> type of the entry value
@@ -40,7 +40,7 @@ public class PartitionsPredicateImpl<K, V> implements PartitionsPredicate<K, V>,
 
     private static final long serialVersionUID = 1L;
 
-    private Collection<? extends Object> partitionKeys;
+    private Collection<?> partitionKeys;
     private Predicate<K, V> target;
 
     // should only be used for deserialization
@@ -54,7 +54,7 @@ public class PartitionsPredicateImpl<K, V> implements PartitionsPredicate<K, V>,
      * @param target       the target {@link Predicate}
      * @throws NullPointerException     if partitionKey or target predicate is {@code null}
      */
-    public PartitionsPredicateImpl(Collection<? extends Object> partitionKey, Predicate<K, V> target) {
+    public PartitionsPredicateImpl(Collection<?> partitionKey, Predicate<K, V> target) {
         this.partitionKeys = checkNotNull(partitionKey, "partitionKeys can't be null");
         this.target = checkNotNull(target, "target predicate can't be null");
     }
@@ -65,7 +65,7 @@ public class PartitionsPredicateImpl<K, V> implements PartitionsPredicate<K, V>,
      * @return the partition ID
      */
     @Override
-    public Collection<? extends Object> getPartitionKeys() {
+    public Collection<?> getPartitionKeys() {
         return partitionKeys;
     }
 

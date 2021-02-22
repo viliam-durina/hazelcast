@@ -152,7 +152,7 @@ public class QueryEngineImpl implements QueryEngine {
             return dispatchFullQueryOnQueryThread(query, partitionIds, targetMode);
         } catch (Throwable t) {
             if (!(t instanceof HazelcastException)) {
-                // these are programmatic errors that needs to be visible
+                // these are programmatic errors that need to be visible
                 throw rethrow(t);
             } else if (t.getCause() instanceof QueryResultSizeExceededException) {
                 throw rethrow(t);
